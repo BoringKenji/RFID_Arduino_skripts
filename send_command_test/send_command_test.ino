@@ -1,4 +1,6 @@
 #define led 13
+int val = 0;
+byte data[5];  //For holding the ID we receive
 
 #include <SoftwareSerial.h>
 
@@ -48,18 +50,19 @@ void loop() {
     }
   }
   
-  if (mySerial.available()) {
-//    for (int i = 0; i < 11; i++) { 
-//      while (!mySerial.available()); // wait for a character
-//
-//      int incomingByte = mySerial.read();
-//      Serial.print(incomingByte, HEX);
-//      Serial.print(' ');
-//    }
-    
-    int hexIn = mySerial.read();
-    //Serial.print("I received: ");
-    Serial.println(hexIn,HEX);
-  }
+  val = mySerial.read();
+   while (val != 0xBB)
+   {  //On Successful read, first byte will always be 0xFF
+      val = mySerial.read();
+      delay(1000);
+   }
+   
+   mySerial.read();              // reserved
+   mySerial.read();              // length
+   mySerial.read();              // command (indicates tag data)
+   data[0] = mySerial.read();    // we read data 1
+   data[1] = mySerial.read();    // we read data 2
+   data[2] = mySerial.read();    // we read data 2
 
+   Serial.println(data[0]);
 }

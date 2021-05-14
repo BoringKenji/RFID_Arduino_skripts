@@ -4,16 +4,16 @@ SoftwareSerial mySerial(2, 3); // RX, TX
 
 
 //Commands
-byte readMulti[] = {0xBB, 0x00, 0x27, 0x00, 0x03, 0x22, 0xFF, 0xFF, 0x4A, 0x7E};
 byte readSingle[] = {0xBB, 0x00, 0x22, 0x00, 0x00, 0x22, 0x7E};
-byte stopRead[] = {0xBB, 0x00, 0x22, 0x00, 0x00, 0x22, 0x7E};
+byte readMulti[] = {0xBB, 0x00, 0x27, 0x00, 0x03, 0x22, 0xFF, 0xFF, 0x4A, 0x7E};
+byte stopRead[] = {0xBB, 0x00, 0x28, 0x00, 0x00, 0x28, 0x7E};
 
 
 void printWelcomeMessage(void){
   Serial.println("Choose from the Menue and enter the number:");
   Serial.println("1. Single Read");
-  Serial.println("2. Multi Read (buggy)");
-  Serial.println("3. Stop Read (not wroking)");
+  Serial.println("2. Multi Read (to stop, select '3')");
+  Serial.println("3. Stop Read");
   Serial.println("5. Print Menue");
   Serial.println();
 }
@@ -54,7 +54,7 @@ void loop() {
   }
 
   //print RFID reply 
-  while (mySerial.available()) {
+  if (mySerial.available()) {
     int hexIn = mySerial.read();
     Serial.print(hexIn,HEX);
     if(hexIn == 0x7E)

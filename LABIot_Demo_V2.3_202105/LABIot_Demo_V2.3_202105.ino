@@ -64,7 +64,7 @@ void setup() {
   //  esp.write("AT\r\n");
   //  delay(2000);
 
-  SPI.begin();
+  //SPI.begin();
 
   scale.begin(DT_PIN, SCK_PIN);
   scale.set_scale();  // 開始取得比例參數

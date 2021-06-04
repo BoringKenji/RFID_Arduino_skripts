@@ -79,7 +79,14 @@ void loop() {
   Serial.println("finweight");
   delay(100);
   String id = getRFIDData();
-  Serial.println(id);
+
+  
+//  int id_len = id.length() + 1;
+//  char char_id[id_len];
+//  id.toCharArray(char_id, id_len);
+//  Serial.print(char_id[0]);
+//  Serial.println(char_id[1]);
+  
   Serial.println("finrfid");
   delay(100);
   String timestamp = "1";
@@ -116,6 +123,7 @@ String getRFIDData(void) {
   delay(500); //additional dealy, since RFID string can be quite long and take a while to arrive
   while (uhf.available()) {
     int hexIn = uhf.read();
+    //if (String(hexIn).length() < 2) idList += "0"; //add a zero if hexIn is only one digit
     idList += String(hexIn,HEX);
     idList += ",";
     

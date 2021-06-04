@@ -1,36 +1,18 @@
-/**
-   lab IoT demo on Arduino Nano
-   LMT 2021.5.19
-   Function description:
-   initWifi(): start wifi connection
-   initCIP(): start CIPSEND
-   httpPost(): POST data
-   getWeightData(): get data of weight sensor
-   getRFIDData(): get data of RFID sensor, buzzer control is under this function
-   buildData(): build JSON data string
-   reset(): ESP reset
-
-   new update on 2021.5.19
-   UHF RFID part
-   change buzzer into LED light
-*/
-
-
-
-#include<SoftwareSerial.h>
+#include"SSerialD.h" // Software Serial works only on Port D but SPI can be used on other ports now
+#include"SSerialB.h"
 #include "HX711.h"
 #include <SPI.h>
 
 //basic setting of hardware
 const String unitinfo = "1";
 //WEIGHT SENSOR
-const int DT_PIN = 5;
-const int SCK_PIN = 6;
+const int DT_PIN = A0; //5
+const int SCK_PIN = A1; //6;
 //BUZZER
 //const int BEEP = A7;
 
 //UHF RFID setting
-SoftwareSerial uhf(3, 2); //RX,TX//115200
+SSerialD uhf(3, 2); //RX,TX//115200
 //UHF Commands
 byte readSingle[] = {0xBB, 0x00, 0x22, 0x00, 0x00, 0x22, 0x7E};
 byte readMulti[] = {0xBB, 0x00, 0x27, 0x00, 0x03, 0x22, 0x00, 0x0A, 0x56, 0x7E};//10 times rotation
@@ -39,51 +21,44 @@ byte setBaudrate[] = {0xBB, 0x00, 0x11, 0x00, 0x02, 0x00, 0x60, 0x73, 0x7E};
 
 String idList = "";
 
-
-SoftwareSerial esp(10, 9);  // RX, TX//9600
+SSerialB esp(6, 5);  // 10RX, 9TX
 HX711 scale;
 
 //link setting//fix in initWifi()
-#define wifi_ssid "iottest"//ap address
-#define wifi_pwd "11111111"//ap password
+#define wifi_ssid "LSK 7028"//ap address
+#define wifi_pwd "wesharetechnology"//ap password
 
 //post setting
 #define url "/hwinfo"
 #define server "148.70.180.108"
 
 void setup() {
+  SPI.begin();
+  
+
+  scale.begin(DT_PIN, SCK_PIN);
+  scale.set_scale();  // 開始取得比例參數
+  scale.tare();//////////程序崩坏点！！！！！！！
+  
   Serial.begin(115200);
   while (!Serial) {
     ;
   }
   Serial.println("WeShare RFID reader is ready!");
   esp.begin(9600);
-  Serial.println("wifi start");
   uhf.begin(115200);
-  Serial.println("active RFID start");
-  //  esp.write("AT\r\n");
-  //  delay(2000);
-
-  SPI.begin();
-
-  scale.begin(DT_PIN, SCK_PIN);
-  scale.set_scale();  // 開始取得比例參數
-  scale.tare();//////////程序崩坏点！！！！！！！
 
   initWifi();
 }
 
 void loop() {
-  //  串口读取互显，调试用
-  //    if (esp.available())
-  //      Serial.write(esp.read());
-  //    if (Serial.available())
-  //      esp.write(Serial.read());
-
-  String weight = String(getWeightData());
+  
+  //String weight = String(getWeightData());
+  String weight = String("123");
   Serial.println("finweight");
   delay(100);
-  String id = getRFIDData();
+  //String id = getRFIDData();
+  String id = "1";
   Serial.println(id);
   Serial.println("finrfid");
   delay(100);
@@ -92,7 +67,12 @@ void loop() {
 
   httpPost(data);
   delay(2000);
+
 }
+
+
+//private fucntions *******************************************************
+
 
 float getWeightData() {
   delay(2000);
@@ -107,6 +87,8 @@ float getWeightData() {
 String getRFIDData(void) {
 //print RFID reply
   uhf.listen();
+  delay(1000);
+  Serial.println("uhf.listen");
   uhf.write(readSingle, sizeof(readSingle));
   String idList = "";
   while (uhf.available()) {
@@ -122,6 +104,7 @@ String getRFIDData(void) {
 
 void initWifi() {
   esp.listen();
+  Serial.println("esp.listen");
   delay(2000);
   Serial.println("initWifi");
   String cmd1 = "AT+CWJAP=\"";
@@ -141,7 +124,6 @@ void initWifi() {
 }
 
 void initCIP() {
-//  esp.listen();
   Serial.println("initCIP()");
   String cmd2 = "AT+CIPSTART=\"TCP\",\"";
   cmd2 += server;
@@ -153,6 +135,8 @@ void initCIP() {
 }
 
 void httpPost (String data) {//post data
+  esp.listen();
+  Serial.println("esp.listen");
   Serial.println("httpPost():" + data);
   initCIP();
   String postRequest = "POST ";

@@ -24,13 +24,13 @@
 //basic setting of hardware
 const String unitinfo = "1";
 //WEIGHT SENSOR
-const int DT_PIN = 5;
-const int SCK_PIN = 6;
+const int DT_PIN = A0;
+const int SCK_PIN = A1;
 //BUZZER
 //const int BEEP = A7;
 
 //UHF RFID setting
-SoftwareSerial uhf(3, 2); //RX,TX//115200
+SoftwareSerial uhf(5, 6); //RX,TX//115200
 //UHF Commands
 byte readSingle[] = {0xBB, 0x00, 0x22, 0x00, 0x00, 0x22, 0x7E};
 byte readMulti[] = {0xBB, 0x00, 0x27, 0x00, 0x03, 0x22, 0x00, 0x0A, 0x56, 0x7E};//10 times rotation
@@ -40,12 +40,10 @@ byte setBaudrate[] = {0xBB, 0x00, 0x11, 0x00, 0x02, 0x00, 0x60, 0x73, 0x7E};
 String idList = "";
 
 
-SoftwareSerial esp(10, 9);  // RX, TX//9600
+SoftwareSerial esp(3, 2);  // RX, TX//9600
 HX711 scale;
 
 //link setting//fix in initWifi()
-//#define wifi_ssid "iottest"//ap address
-//#define wifi_pwd "11111111"//ap password
 #define wifi_ssid "LSK 7028"//ap address
 #define wifi_pwd "wesharetechnology"//ap password
 
@@ -114,8 +112,13 @@ float getWeightData() {
 String getRFIDData(void) {
 //print RFID reply
   uhf.listen();
+  Serial.println("read RFID tag");
+  
   uhf.write(readSingle, sizeof(readSingle));
   String idList = "";
+
+  while (!uhf.available()){} //wait for RFID response 
+  delay(500); //additional dealy, since RFID string can be quite long and take a while to arrive
   while (uhf.available()) {
     int hexIn = uhf.read();
     idList += String(hexIn,HEX);
@@ -160,6 +163,7 @@ void initCIP() {
 }
 
 void httpPost (String data) {//post data
+  esp.listen();
   Serial.println("httpPost():" + data);
   initCIP();
   String postRequest = "POST ";
@@ -187,6 +191,7 @@ void httpPost (String data) {//post data
     esp.print(postRequest);
     if ( esp.find("SEND OK")) {
       Serial.println("Packet sent");
+      while (!esp.available()){} //wait for ESP response
       while (esp.available()) {
         String tmpResp = esp.readString();
         Serial.println(tmpResp);

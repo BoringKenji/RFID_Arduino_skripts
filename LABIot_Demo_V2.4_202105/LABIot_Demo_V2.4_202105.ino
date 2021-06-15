@@ -51,6 +51,8 @@ HX711 scale;
 #define url "/hwinfo"
 #define server "148.70.180.108"
 
+
+
 void setup() {
   Serial.begin(115200);
   while (!Serial) {
@@ -66,33 +68,57 @@ void setup() {
 
   //SPI.begin();
 
-  scale.begin(DT_PIN, SCK_PIN);
-  scale.set_scale();  // 開始取得比例參數
-  scale.tare();//////////程序崩坏点！！！！！！！
+//  scale.begin(DT_PIN, SCK_PIN);
+//  scale.set_scale();  // 開始取得比例參數
+//  scale.tare();//////////程序崩坏点！！！！！！！
 
-  initWifi();
+  //initWifi();
 }
 
 void loop() {
 
-  String weight = String(getWeightData());
+  //String weight = String(getWeightData());
   Serial.println("finweight");
   delay(100);
   String id = getRFIDData();
+  Serial.println(id);
 
-  
-//  int id_len = id.length() + 1;
-//  char char_id[id_len];
-//  id.toCharArray(char_id, id_len);
-//  Serial.print(char_id[0]);
-//  Serial.println(char_id[1]);
-  
-  Serial.println("finrfid");
-  delay(100);
-  String timestamp = "1";
-  String data = buildData(id, timestamp, weight, unitinfo);
 
-  httpPost(data);
+  int id_len = id.length() + 1;
+  char str[id_len];
+  id.toCharArray(str, id_len);
+  int scan_length = sizeof(id) / sizeof(char);
+  separate(id, rfid, scan_length);
+  
+  for (int j = 0; j < 6; j++) {
+    for (int i = 0; i < 100; i++) {
+      Serial.print(rfid[j][i]);
+    }
+
+    Serial.println();
+  }
+
+  //Separeat String
+  int id_len = id.length() + 1;
+  char str[id_len];
+  id.toCharArray(str, id_len);
+  char delim[] = " ";
+
+  char *ptr = strtok(str, delim);
+  
+  while(ptr != NULL)
+  {
+    Serial.println(ptr);
+    
+    ptr = strtok(NULL, delim);
+  }
+
+//  Serial.println("finrfid");
+//  delay(100);
+//  String timestamp = "1";
+//  String data = buildData(id, timestamp, weight, unitinfo);
+//
+//  httpPost(data);
   delay(2000);
 }
 
@@ -120,13 +146,13 @@ String getRFIDData(void) {
   String idList = "";
 
   while (!uhf.available()){} //wait for RFID response 
-  delay(500); //additional dealy, since RFID string can be quite long and take a while to arrive
+  delay(1000); //additional dealy, since RFID string can be quite long and take a while to arrive
   while (uhf.available()) {
     int hexIn = uhf.read();
     //if (String(hexIn).length() < 2) idList += "0"; //add a zero if hexIn is only one digit
     idList += String(hexIn,HEX);
-    idList += ",";
-    
+    if (hexIn == 0x7E) idList += " ";
+    else idList += ",";
     if (!uhf.available()){//wait till last HEX message has arrived
       return idList;
     }
@@ -246,4 +272,58 @@ void array_to_string(byte array[], unsigned int len, char buffer[]) { //byte arr
     buffer[i * 2 + 1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
   }
   buffer[len * 2] = '\0';
+}
+
+//1. seperate the different tags
+// String id[0] = bb,2,22,0,d,c8,24,0,0,0,0,0,0,0,11,1d,79,20,e4,7e
+void separate(char scan[], char store[][100], int lenght)
+{
+  int k = 0;
+  for (int j = 0; j < 6; j++) {
+    int i = 0;
+    while (scan[i] != ' ')
+    {
+      store[j][i] = scan[k];
+      i++; k++;
+      if (k > lenght) {
+        return;
+      }
+    }
+    k++;
+    
+  }
+  return;
+}
+
+// get id[5] eg c8 && get the 15th entry eg 1d
+void getid(int idx, char rfid[][100], char id[][2])
+{
+  for(int a=0 ; a<6 ; a++)
+  {
+    if (rfid[a][0] != 'b')
+    {
+      return;
+    }
+    int i = 0, j = 0, k = 0;
+    while (i < idx + 1)
+    {
+
+      if (i == idx)
+      {
+        id[a][k] = rfid[a][j];
+        k++;
+      }
+      if (rfid[a][j] == ',')
+      {
+        i++;
+      }
+      j++;
+    }
+    for (int i = 0; i < 2; i++)
+    {
+      Serial.print(id[a][i]);
+    }
+    Serial.println();
+  }
+  return;
 }

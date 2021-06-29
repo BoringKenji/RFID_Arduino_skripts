@@ -20,6 +20,7 @@
 #include<SoftwareSerial.h>
 #include "HX711.h"
 #include <SPI.h>
+#include "UST_RFID.h"
 
 //basic setting of hardware
 const String unitinfo = "1";
@@ -46,14 +47,23 @@ HX711 scale;
 //link setting//fix in initWifi()
 #define wifi_ssid "LSK 7028"//ap address
 #define wifi_pwd "wesharetechnology"//ap password
+//#define wifi_ssid "iottest"//ap address
+//#define wifi_pwd "11111111"//ap password
+//#define wifi_ssid "Josef_Laptop"//ap address
+//#define wifi_pwd "12345678"//ap password
 
 //post setting
 #define url "/hwinfo"
 #define server "148.70.180.108"
 
+#define NUMBEROFBYTES (20*6)
 
 
 void setup() {
+  //make another Vcc on pin D12 & D11
+//  pinMode(12, OUTPUT); digitalWrite(12, HIGH); 
+//  pinMode(11, OUTPUT); digitalWrite(11, HIGH);
+  
   Serial.begin(115200);
   while (!Serial) {
     ;
@@ -68,59 +78,47 @@ void setup() {
 
   //SPI.begin();
 
-//  scale.begin(DT_PIN, SCK_PIN);
-//  scale.set_scale();  // 開始取得比例參數
-//  scale.tare();//////////程序崩坏点！！！！！！！
+  scale.begin(DT_PIN, SCK_PIN);
+  scale.set_scale();  // 開始取得比例參數
+  scale.tare();//////////程序崩坏点！！！！！！！
 
-  //initWifi();
+  initWifi();
 }
 
 void loop() {
 
-  //String weight = String(getWeightData());
+  String weight = String(getWeightData());
   Serial.println("finweight");
   delay(100);
-  char id [300] = getRFIDDataChar();
-  Serial.println(id);
 
+  //RFID
+  uint8_t hexArr[NUMBEROFBYTES];
+  uint8_t numberOfTags = getRFIDData(hexArr);
+  //Serial.println(hexArr[0],HEX);
+  char *p; 
+  //uint8_t numberOfTags = sizeof(hexArr)/20;
+  //Serial.println((String)"Number of Tags: " + numberOfTags);
+  p = getTagfromHEX(hexArr, numberOfTags);
+  //Serial.println((String)"ids: " + p);
+  String aString1 = (String)p;
+  
+  //second scan
+  numberOfTags = getRFIDData(hexArr);
+  p = getTagfromHEX(hexArr, numberOfTags);
+  //Serial.println(p);
+  String aString2 = (String)p;
 
-//  int id_len = id.length() + 1;
-//  char str[id_len]; char rfid[6][100] = { 0 };
-//  id.toCharArray(str, id_len);
-//  Serial.println((String)"id: " + id);
-//  int scan_length = sizeof(id);
-//  Serial.println((String)"signal length: " + scan_length);
-//  separate(id, rfid, scan_length);
-//  
-//  for (int j = 0; j < 6; j++) {
-//    for (int i = 0; i < 100; i++) {
-//      Serial.print(rfid[j][i]);
-//    }
-//
-//    Serial.println();
-//  }
+  aString1 = keepIndividuals(aString1,3,aString2,3);
+  Serial.println(aString1);
+  Serial.println(aString2);
 
-//  //Separeat String
-//  int id_len = id.length() + 1;
-//  char str[id_len];
-//  id.toCharArray(str, id_len);
-//  char delim[] = " ";
-//
-//  char *ptr = strtok(str, delim);
-//  
-//  while(ptr != NULL)
-//  {
-//    Serial.println(ptr);
-//    
-//    ptr = strtok(NULL, delim);
-//  }
+  //Send Data through Wifi
+  Serial.println("finrfid");
+  delay(100);
+  String timestamp = "1";
+  String data = buildData(aString1, timestamp, weight, unitinfo);
 
-//  Serial.println("finrfid");
-//  delay(100);
-//  String timestamp = "1";
-//  String data = buildData(id, timestamp, weight, unitinfo);
-//
-//  httpPost(data);
+  httpPost(data);
   delay(2000);
 }
 
@@ -138,48 +136,25 @@ float getWeightData() {
   return true_weight;
 }
 
-
-String getRFIDData(void) {
+uint8_t getRFIDData(uint8_t result[NUMBEROFBYTES]) {
 //print RFID reply
   uhf.listen();
-  Serial.println("read RFID tag");
-  
+  Serial.println("read RFID tag"); 
   uhf.write(readSingle, sizeof(readSingle));
-  String idList = "";
-
+//  uhf.write(readMulti, sizeof(readMulti));
   while (!uhf.available()){} //wait for RFID response 
-  delay(1000); //additional dealy, since RFID string can be quite long and take a while to arrive
-  while (uhf.available()) {
-    int hexIn = uhf.read();
-    //if (String(hexIn).length() < 2) idList += "0"; //add a zero if hexIn is only one digit
-    idList += String(hexIn,HEX);
-    if (hexIn == 0x7E) idList += " ";
-    else idList += ",";
-    if (!uhf.available()){//wait till last HEX message has arrived
-      return idList;
+  delay(500); //additional dealy, since RFID string can be quite long and take a while to arrive
+  uint16_t i = 0;
+  uint8_t tags = 0; 
+  while (uhf.available()) {    
+    result[i] = uhf.read();    
+    //Serial.print(result[i],HEX);      
+    if (result[i] == 0x7E){
+      tags++; 
     }
-  }
-}
-
-
-char getRFIDDataChar(void) {
-//print RFID reply
-  uhf.listen();
-  Serial.println("read RFID tag");
-  
-  uhf.write(readSingle, sizeof(readSingle));
-  char idList [300]= {0};
-
-  while (!uhf.available()){} //wait for RFID response 
-  delay(1000); //additional dealy, since RFID string can be quite long and take a while to arrive
-  while (uhf.available()) {
-    int hexIn = uhf.read();
-    if (String(hexIn).length() < 2) idList += "0"; //add a zero if hexIn is only one digit
-    idList += char(hexIn,HEX);
-    if (hexIn == 0x7E) idList += char(" ");
-    else idList += ",";
+    i++;
     if (!uhf.available()){//wait till last HEX message has arrived
-      return idList;
+      return tags;
     }
   }
 }
@@ -297,58 +272,4 @@ void array_to_string(byte array[], unsigned int len, char buffer[]) { //byte arr
     buffer[i * 2 + 1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
   }
   buffer[len * 2] = '\0';
-}
-
-//1. seperate the different tags
-// String id[0] = bb,2,22,0,d,c8,24,0,0,0,0,0,0,0,11,1d,79,20,e4,7e
-void separate(char scan[], char store[][100], int lenght)
-{
-  int k = 0;
-  for (int j = 0; j < 6; j++) {
-    int i = 0;
-    while (scan[i] != ' ')
-    {
-      store[j][i] = scan[k];
-      i++; k++;
-      if (k > lenght) {
-        return;
-      }
-    }
-    k++;
-    
-  }
-  return;
-}
-
-// get id[5] eg c8 && get the 15th entry eg 1d
-void getid(int idx, char rfid[][100], char id[][2])
-{
-  for(int a=0 ; a<6 ; a++)
-  {
-    if (rfid[a][0] != 'b')
-    {
-      return;
-    }
-    int i = 0, j = 0, k = 0;
-    while (i < idx + 1)
-    {
-
-      if (i == idx)
-      {
-        id[a][k] = rfid[a][j];
-        k++;
-      }
-      if (rfid[a][j] == ',')
-      {
-        i++;
-      }
-      j++;
-    }
-    for (int i = 0; i < 2; i++)
-    {
-      Serial.print(id[a][i]);
-    }
-    Serial.println();
-  }
-  return;
 }

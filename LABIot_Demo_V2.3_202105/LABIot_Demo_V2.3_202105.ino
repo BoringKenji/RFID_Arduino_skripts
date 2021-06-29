@@ -46,17 +46,20 @@ HX711 scale;
 //link setting//fix in initWifi()
 //#define wifi_ssid "LSK 7028"//ap address
 //#define wifi_pwd "wesharetechnology"//ap password
-#define wifi_ssid "iottest"//ap address
-#define wifi_pwd "11111111"//ap password
+//#define wifi_ssid "iottest"//ap address
+//#define wifi_pwd "11111111"//ap password
+#define wifi_ssid "Josef_Laptop"//ap address
+#define wifi_pwd "12345678"//ap password
 
 //post setting
 #define url "/hwinfo"
 #define server "148.70.180.108"
 
+
 void setup() {
   //make another Vcc on pin D12 & D11
-  pinMode(12, OUTPUT); digitalWrite(12, HIGH); 
-  pinMode(11, OUTPUT); digitalWrite(11, HIGH);
+//  pinMode(12, OUTPUT); digitalWrite(12, HIGH); 
+//  pinMode(11, OUTPUT); digitalWrite(11, HIGH);
   
   Serial.begin(115200);
   while (!Serial) {

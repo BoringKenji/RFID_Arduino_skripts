@@ -68,6 +68,7 @@ void setup()
   Serial.begin(9600);
 
   int scan_length = sizeof(first_scan) / sizeof(char);
+  Serial.println((String)"signal length" + scan_length);
   separate(first_scan, rfid, scan_length);
 
 

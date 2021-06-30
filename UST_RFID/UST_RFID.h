@@ -7,6 +7,7 @@
 
 //function prototypes
 char *getTagfromHEX(unsigned char HexArr[], uint8_t nTags = 6);
+char *getTagfromHEX_check(unsigned char HexArr[]);
 String keepIndividuals(String scan1, uint8_t nTags1, String scan2, uint8_t nTags2);
 
 #endif

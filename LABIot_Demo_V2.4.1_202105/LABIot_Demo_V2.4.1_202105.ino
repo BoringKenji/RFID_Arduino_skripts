@@ -103,14 +103,14 @@ void loop() {
   String aString1 = (String)p;
   
   //second scan
-  numberOfTags = getRFIDData(hexArr);
-  p = getTagfromHEX(hexArr, numberOfTags);
-  //Serial.println(p);
-  String aString2 = (String)p;
-
-  aString1 = keepIndividuals(aString1,3,aString2,3);
-  Serial.println(aString1);
-  Serial.println(aString2);
+//  numberOfTags = getRFIDData(hexArr);
+//  p = getTagfromHEX(hexArr, numberOfTags);
+//  //Serial.println(p);
+//  String aString2 = (String)p;
+//
+//  aString1 = keepIndividuals(aString1,3,aString2,3);
+//  Serial.println(aString1);
+//  Serial.println(aString2);
 
   //Send Data through Wifi
   Serial.println("finrfid");

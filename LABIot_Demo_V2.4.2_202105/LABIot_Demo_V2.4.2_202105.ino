@@ -57,7 +57,7 @@ HX711 scale;
 #define server "148.70.180.108"
 
 #define NUMBEROFBYTES (20*6)
-#define NUMBERSCANS   10
+#define NUMBERSCANS   2
 
 void setup() {
   //make another Vcc on pin D12 & D11
@@ -92,7 +92,7 @@ void loop() {
   delay(100);
 
   //RFID
-  uint8_t hexArr[NUMBEROFBYTES];
+  uint8_t *hexArr = new uint8_t[NUMBEROFBYTES];
   uint8_t numberOfTags1 = getRFIDData(hexArr);
   //Serial.println(hexArr[0],HEX);
   char *p; 
@@ -105,8 +105,11 @@ void loop() {
   uint8_t numberOfTags2;
   String aString2;
   for ( uint8_t i = 0; i < (NUMBERSCANS - 1); i++){
+    delete[] hexArr;
+    uint8_t *hexArr = new uint8_t[NUMBEROFBYTES];
     numberOfTags2  = getRFIDData(hexArr);
     p = getTagfromHEX(hexArr, numberOfTags2);
+    
     aString2 = (String)p; 
     aString1 = keepIndividuals(aString1,numberOfTags1,aString2,numberOfTags2);
     numberOfTags1 = aString1.length()/8;
